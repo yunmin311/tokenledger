@@ -87,3 +87,33 @@ Never add an AI `Co-Authored-By` trailer. **Do** keep the genuine human `Co-auth
 ### Authoring GitHub content via `gh`
 
 Write PR/issue bodies and comments to a file and pass it, rather than inline heredocs: `gh issue comment --body-file <path>`, `gh api -X PATCH … -F body=@<path>`. Inline `--body "$(cat <<EOF … EOF)"` mangles backtick escaping and renders as a literal `` \` `` in GitHub markdown. Same spirit for prose: write paragraphs as continuous lines and let GitHub wrap them — don't hard-wrap at 80 columns.
+
+---
+
+# TokenLedger 定制章节（yunmin311 fork）
+
+> 上游内容以上全部保持原样；以下仅约束本 fork 的定制开发。
+
+## 项目定位
+
+TokenLedger = 在 token-monitor 基础上定制的**全桌面统一计费中枢**：Windows + WSL 双环境、token/积分双轨、credits↔token 回归校准。完整规划见 `docs/tokenledger/统一Token计费中枢-立项报告书.md` 与 `统一Token计费中枢-设计书.md`（视觉令牌表、移植性规约、里程碑 M0–M4 均在其中，动 UI 前必读设计书 §3 与视觉令牌表）。
+
+## 硬性边界
+
+- **只在本仓库（E:\1project\tokenledger）内工作**；严禁读取、修改 E:\1project 下任何其他项目目录。
+- 与上游的差异一律收敛在明确标注的定制模块；不重写上游核心，保持可 rebase。
+
+## 定制规约（摘要，全文见设计书）
+
+1. UI 重做遵循 cc-switch 视觉令牌表（设计书 §3 顶部）；左侧工具导航制。
+2. 可移植性六条硬规约（设计书 §13.3）：adapters/core 禁止宿主 API import；壳层只经 IShell 接口；DB 访问走 repository 层；子进程协议 JSON-line；profile 纯 JSON；core/adapters 测试必须在纯 Node 跑通。
+3. 积分/置信度模型：`exact / vendor / estimated` 三级，全链路可见；WorkBuddy `credit_json` 双轨回归需样本 ≥50 且 R²≥0.9 才生效。
+4. 提交信息英文 conventional commits；对话与文档中文。
+
+## M0 验收（当前阶段）
+
+- [x] fork 落地 E:\1project\tokenledger，origin=yunmin311/tokenledger，upstream=Javis603/token-monitor
+- [x] npm ci + vendored tokscale 就位
+- [ ] `npm run agent:once -- --dry-run` 五源出数（ZCode/Claude/Codex/OpenCode/WorkBuddy）
+- [ ] `npm run verify`（lint + test）通过
+- [ ] 首次 verified push
