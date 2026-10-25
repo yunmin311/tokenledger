@@ -127,5 +127,9 @@ TokenLedger = 在 token-monitor 基础上定制的**全桌面统一计费中枢*
 - [x] credits 全链路：agent 附加 → `shared/credits/summary.js` 线格式 → usage.js 白名单 + limitsOnly 保留 → hub 存储（9 单测）
 - [x] worker 闭包收录 credits/summary.js（hub-build-manifest + sync:worker + hub build marker）
 - [~] verify 定论（2026-10-25，本机）：ESLint 绿；按目录串行扫荡 docs/hub/scripts/worker 全绿，electron 3497 过 / 3 挂，agent 42 过 / 1 挂，shared 15 分钟仍跑不完（尾部为 WSL 真实数据扫描测试）。全部 40+ 失败已用 upstream/main 纯净 worktree 基线对照证明为**本机既有环境性失败**（基线同样 39 挂、同样超时），与本 fork 改动无关。全套件并发直跑会在 shared 段停摆，**本机验收以按目录串行为准**。
-- [ ] Trae·CN、Cursor 额度 adapter
-- [ ] 水位增量策略复核（5.7GB opencode.db）
+- [x] Trae·CN / Cursor / Copilot 额度：**上游已有 provider**（`src/shared/limits/providers.js` 已注册，providers/trae|cursor|copilot 目录齐全），仅需用户配置凭据，无开发量
+- [x] 水位增量：**上游既有设计复核通过**（`applyPeriodDelta` 锚点精确增量 + WSL `wslAnchor` 冻结，见 docs/architecture.md "Exact accounting"）
+
+### 策略修订（2026-10-25，用户拍板）
+
+**UI 一律不重做**：上游 token-monitor 界面（含 Windows 玻璃 Edge Dock `TokenMonitor.DockBackdrop.exe`、托盘、悬浮窗、面板）为唯一视觉与交互基线，只做加法。原 M3"UI 重做（cc-switch 风）"取消。剩余建设项：renderer 积分呈现 → M2 回归校准模块 → 置信度标注呈现。

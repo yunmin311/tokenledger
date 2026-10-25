@@ -4,6 +4,17 @@
 > 一句话定位：**cc-switch 级的计费体验 × 全桌面（Windows + WSL + 积分制工具）计量覆盖**。
 > 设计蓝本：[cc-switch](https://github.com/farion1231/cc-switch)（MIT）——借鉴其信息架构与交互，不复用其代码（技术栈不同）；不做其供应商切换/路由核心，只做计费。
 
+> ## ⭐ v1.4 策略修订（2026-10-25，用户拍板，效力高于本文其余 UI 章节）
+>
+> **UI 一律不重做。** 上游 token-monitor 的界面与交互（含 Windows 玻璃质感 Edge Dock、托盘、悬浮窗、面板）即为唯一视觉与交互基线，直接在其上继续构建。本文 §2/§3 的 cc-switch 式信息架构、§3 顶部视觉令牌表**降级为参考资料**（仅当未来新增独立账单页时取用，且新页面风格仍须服从上游组件语言）。
+>
+> 仍然要做的只有"它没有的"：
+> 1. 积分账本（已合入：采集→线格式→hub 存储；待做：renderer 呈现）
+> 2. credits↔token 回归校准模块（M2）
+> 3. 置信度标注（作为数据属性随记录呈现，不新造界面体系）
+>
+> 已核实上游本就具备（无需开发）：Trae CN / Cursor / Copilot 额度 provider（`src/shared/limits/providers.js` 已注册，配置凭据即用）、水位增量（`applyPeriodDelta` 锚点精确增量，WSL 锚点冻结）、Windows 玻璃 Dock（`TokenMonitor.DockBackdrop.exe` 已随构建产出）。
+
 ---
 
 ## 0. 设计原则
