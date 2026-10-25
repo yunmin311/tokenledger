@@ -267,6 +267,7 @@ const {
   sessionUsageArchiveDatabasePath
 } = require('../shared/usage/sessionUsageArchiveStore');
 const { createUsageTransform, usageTransformSettings } = require('../shared/usage/usageTransform');
+const { createCreditsAttacher } = require('../shared/credits/attach');
 const { createUsageHost, terminateUsageHostSubprocesses, whenUsageHostsIdle } = require('../shared/usage/usageHost');
 const { clearDailyHistoryArchive } = require('../shared/dailyHistoryArchive');
 const { aggregateDevices, aggregateHistory } = require('../shared/usage');
@@ -2908,6 +2909,7 @@ const usageTransform = createUsageTransform({
   store: sessionUsageArchiveStore,
   getSettings: () => settings,
   isExternalAgentActive,
+  attachCredits: createCreditsAttacher(),
   onCaptureFailure: () => diagnosticJournal.record({ subsystem: 'storage', code: 'storage-archive-update-failed' })
 });
 
