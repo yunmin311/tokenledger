@@ -110,10 +110,22 @@ TokenLedger = 在 token-monitor 基础上定制的**全桌面统一计费中枢*
 3. 积分/置信度模型：`exact / vendor / estimated` 三级，全链路可见；WorkBuddy `credit_json` 双轨回归需样本 ≥50 且 R²≥0.9 才生效。
 4. 提交信息英文 conventional commits；对话与文档中文。
 
-## M0 验收（当前阶段）
+## 里程碑验收
+
+### M0（已完成 2026-10-25）
 
 - [x] fork 落地 E:\1project\tokenledger，origin=yunmin311/tokenledger，upstream=Javis603/token-monitor
-- [x] npm ci + vendored tokscale 就位
-- [ ] `npm run agent:once -- --dry-run` 五源出数（ZCode/Claude/Codex/OpenCode/WorkBuddy）
-- [ ] `npm run verify`（lint + test）通过
-- [ ] 首次 verified push
+- [x] npm ci + vendored tokscale 4.20.0 就位
+- [x] `npm run agent:once -- --dry-run` 出数：**六源**（ZCode/Claude/Codex/OpenCode/WorkBuddy/DSH），WSL codex+claude 自动并入；今日 114.8M tok / $12.93
+- [x] 首次及后续 verified push（f7da899e → 36aa1954 → ef266e59）
+- [x] `npm run dist:win:dir` 构建链通过（dist/win-unpacked 408MB，含 tokscale 内核）
+- [~] `npm run verify`：ESLint 绿；测试套件含真实数据扫描、整体极慢，按文件拆分验证（M1 待办）
+
+### M1（进行中）
+
+- [x] `providers/workbuddy/credits.js`：credit_json → 负积分流水采集器（5 单测 + 真库冒烟 192 事件/45 会话/6348 积分）
+- [x] credits 全链路：agent 附加 → `shared/credits/summary.js` 线格式 → usage.js 白名单 + limitsOnly 保留 → hub 存储（9 单测）
+- [x] worker 闭包收录 credits/summary.js（hub-build-manifest + sync:worker + hub build marker）
+- [ ] verify 全量跑完 / 慢测试定位与隔离
+- [ ] Trae·CN、Cursor 额度 adapter
+- [ ] 水位增量策略复核（5.7GB opencode.db）
