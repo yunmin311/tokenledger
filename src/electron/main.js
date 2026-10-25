@@ -4378,6 +4378,14 @@ async function startIcloudCollector() {
       const identity = currentHubStatsIdentity('icloud');
       setLatestHubStatsCache(stats, 'icloud', generation, identity);
       updateDiscordRpcDisplay(stats);
+      // TokenLedger dev diagnostics: one line per stats push, stdout only.
+      if (!app.isPackaged) {
+        try {
+          const prov = (stats?.limits?.providers || []).map((p) => `${p.provider}:${p.status}`).join(' ');
+          const cred = (stats?.devices || []).map((d) => `${d.deviceId}:credits=${d.credits ? d.credits.available : 'absent'}`).join(' ');
+          console.log(`[diag] statsPush limits=[${prov}] ${cred}`);
+        } catch (_) { /* diagnostics must never break the push */ }
+      }
       sendPush({ event: 'stats', data: { type: 'stats', reason: 'local', stats, at: new Date().toISOString() } }, { widgetProducerOwner });
     },
     onStatus: (status) => {
@@ -4644,6 +4652,14 @@ function startHostStats() {
     if (!hubModeRequestIsCurrent(generation, 'host', cacheIdentity)) return;
     setLatestHubStatsCache(stats, 'host', generation, cacheIdentity);
     updateDiscordRpcDisplay(stats);
+    // TokenLedger dev diagnostics: one line per stats push, stdout only.
+    if (!app.isPackaged) {
+      try {
+        const prov = (stats?.limits?.providers || []).map((p) => `${p.provider}:${p.status}`).join(' ');
+        const cred = (stats?.devices || []).map((d) => `${d.deviceId}:credits=${d.credits ? d.credits.available : 'absent'}`).join(' ');
+        console.log(`[diag] statsPush limits=[${prov}] ${cred}`);
+      } catch (_) { /* diagnostics must never break the push */ }
+    }
     sendPush({ event: 'stats', data: { type: 'stats', reason, stats, at: new Date().toISOString() } }, { widgetProducerOwner });
   };
   embeddedHubUnsub = embeddedHub.hub.onStats((stats, reason) => emit(stats, reason || 'hub'));
@@ -4941,6 +4957,15 @@ function sendPush(payload, options = {}) {
   if (payload?.data?.stats) {
     payload.data.stats = injectLocalDeviceStatus(payload.data.stats);
     latestStats = payload.data.stats;
+    // TokenLedger dev diagnostics: the single sink every stats push crosses.
+    if (!app.isPackaged) {
+      try {
+        const s = latestStats;
+        const prov = (s?.limits?.providers || []).map((p) => `${p.provider}:${p.status}`).join(' ');
+        const cred = (s?.devices || []).map((d) => `${d.deviceId}:credits=${d.credits ? d.credits.available : 'absent'}`).join(' ');
+        console.log(`[diag] sendPush reason=${payload?.data?.reason} limits=[${prov}] ${cred}`);
+      } catch (_) { /* diagnostics must never break the push */ }
+    }
     // Client local batches overlay usage on the cached Hub snapshot; they do
     // not supersede an in-flight read of fresh remote stats.
     if (!(settings?.hubMode === 'client' && payload.data.reason === 'local')) {
@@ -7517,6 +7542,12 @@ function createWindow(boundsOverride, options = {}) {
   win.on('hide', () => sendMainWindowVisibility(win));
   win.on('minimize', () => sendMainWindowVisibility(win));
   win.on('restore', () => sendMainWindowVisibility(win));
+  // TokenLedger dev diagnostics: forward renderer console to stdout.
+  if (!app.isPackaged) {
+    win.webContents.on('console-message', (_event, _level, message) => {
+      if (String(message || '').startsWith('[diag')) console.log(String(message));
+    });
+  }
   win.webContents.on('did-finish-load', () => {
     sendFloatingBubbleState();
     // Only report a window that is already on screen. A window still awaiting its

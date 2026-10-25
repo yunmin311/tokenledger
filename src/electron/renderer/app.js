@@ -6782,6 +6782,9 @@ function renderHomeDeviceModule() {
     return lines.join('\n');
   }
   for (const row of rows) {
+    if (row === rows[0]) {
+      console.log('[diag-render] deviceRow', row.key, 'creditsAvailable=', row.creditsAvailable, 'creditsToday=', row.creditsToday, 'creditsTotal=', row.creditsTotal);
+    }
     const item = document.createElement('div');
     item.className = 'home-list-row home-device-row';
     if (row.isStale) {
