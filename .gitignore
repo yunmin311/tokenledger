@@ -24,3 +24,6 @@ worker/node_modules/
 worker/.dev.vars
 devlog/
 .tl-m0-dryrun.log
+
+# TokenLedger local diagnostics and scratch
+.tl-*
