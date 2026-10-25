@@ -32,6 +32,7 @@ git push
 | Trae CN 额度 | 待配 token | traE.cn 登录 → F12 → Cookies → 复制 `cloud-ide-jwt` 粘贴到设置 Trae 处 |
 | 托盘内容 | 可切 tokens/cost/bars | 默认显示当期用量最高 agent 的 logo |
 | DeepSeek 额度 | 已通过 `.env` 配好 | 余额卡片已就绪 |
+| ZCode 历史基数 | `manualUsageBases`（已设 +600M） | settings.json：`{"tool":"zcode","tokens":600000000}`；恒定加进 allTime 总量与 clientTokens.zcode，标注用户申报口径；改动数字后重启生效 |
 
 ## 三、隐私与数据安全边界
 
