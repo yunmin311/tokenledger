@@ -88,6 +88,39 @@ test('usageTransform applies attachCredits after projection', () => {
   assert.equal(out.today.totalTokens, 2);
 });
 
+test('manual usage bases fold a fixed historical offset into allTime', () => {
+  const transform = createUsageTransform({
+    getSettings: () => ({
+      sessionUsageArchiveEnabled: false,
+      projectsEnabled: false,
+      manualUsageBases: [{ tool: 'zcode', tokens: 600000000 }]
+    })
+  });
+  const raw = { deviceId: 'd', allTime: { totalTokens: 100, clientTokens: { codex: 100 } } };
+  const out = transform.transform(raw, 'test', {});
+  assert.equal(out.allTime.totalTokens, 100 + 600000000);
+  assert.equal(out.allTime.clientTokens.zcode, 600000000);
+  assert.equal(out.allTime.clientTokens.codex, 100);
+  // Idempotent per call: the base is a constant on the raw summary, never compounding.
+  const again = transform.transform({ deviceId: 'd', allTime: { totalTokens: 100, clientTokens: {} } }, 'test', {});
+  assert.equal(again.allTime.totalTokens, 100 + 600000000);
+});
+
+test('manual usage bases tolerate junk entries and missing periods', () => {
+  const transform = createUsageTransform({
+    getSettings: () => ({
+      sessionUsageArchiveEnabled: false,
+      projectsEnabled: false,
+      manualUsageBases: [{ tool: '', tokens: 5 }, { tool: 'x', tokens: -3 }, 'junk', { tool: 'zcode', tokens: 7 }]
+    })
+  });
+  const out = transform.transform({ deviceId: 'd' }, 'test', {});
+  assert.equal(out.allTime, undefined);
+  const out2 = transform.transform({ deviceId: 'd', allTime: { totalTokens: 0 } }, 'test', {});
+  assert.equal(out2.allTime.totalTokens, 7);
+  assert.equal(out2.allTime.clientTokens.zcode, 7);
+});
+
 test('aggregateDevices passes the ledger through per device only', () => {
   const credits = { available: true, tool: 'workbuddy', updatedAt: 'x', totals: { credits: 9, requests: 2 } };
   const stats = aggregateDevices([

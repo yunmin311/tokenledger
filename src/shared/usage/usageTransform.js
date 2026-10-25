@@ -14,9 +14,32 @@ const { applyProjectRollups } = require('../usage');
 const USAGE_TRANSFORM_SETTING_KEYS = Object.freeze([
   'archivedClientUsage',
   'clients',
+  'manualUsageBases',
   'projectsEnabled',
   'sessionUsageArchiveEnabled'
 ]);
+
+// TokenLedger: a fixed, user-declared offset for tools whose historical usage
+// predates local tracking (rolling logs, desktop clients without token
+// detail). Applied to allTime only, after every other projection step, so the
+// anchored delta math stays exact — a constant offset cancels in deltas and
+// never compounds, because project() starts from the raw collector summary.
+function applyManualUsageBases(summary, bases) {
+  if (!Array.isArray(bases) || bases.length === 0) return summary;
+  // Collector summaries carry periods at the top level (allTime/today/month);
+  // normalized device records nest them under .periods. Handle both shapes.
+  const allTime = summary?.allTime || summary?.periods?.allTime;
+  if (!allTime || typeof allTime !== 'object') return summary;
+  for (const base of bases) {
+    const tool = String(base?.tool || '').trim();
+    const tokens = Math.max(0, Math.trunc(Number(base?.tokens) || 0));
+    if (!tool || tokens === 0) continue;
+    allTime.totalTokens = (allTime.totalTokens || 0) + tokens;
+    const clients = allTime.clientTokens || (allTime.clientTokens = {});
+    clients[tool] = (clients[tool] || 0) + tokens;
+  }
+  return summary;
+}
 
 function usageTransformSettings(settings = {}) {
   const picked = {};
@@ -106,8 +129,9 @@ function createUsageTransform(options = {}) {
           mutate: true
         });
     delete visibleSummary.sessionUsageArchiveFullScan;
-    const projected = settings.projectsEnabled === false ? visibleSummary : applyProjectRollups(visibleSummary);
-    return attachCredits ? attachCredits(projected) : projected;
+    const rolledUp = settings.projectsEnabled === false ? visibleSummary : applyProjectRollups(visibleSummary);
+    const withBases = applyManualUsageBases(rolledUp, settings.manualUsageBases);
+    return attachCredits ? attachCredits(withBases) : withBases;
   }
 
   function transform(summary, _reason, meta = {}) {
