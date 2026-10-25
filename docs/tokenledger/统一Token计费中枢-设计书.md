@@ -79,18 +79,28 @@
 
 > 通用规范：Tailwind；数字 tabular-nums；所有表格列可显隐、可排序、可过滤；产品支持深浅色跟随系统（**评审稿钉浅色**）。
 >
-> **视觉令牌表（v1.2：cc-switch 截图实测提取，开工直接引用）**
+> **视觉令牌表（v1.3：从 cc-switch 源码 `src/index.css` 提取其真实令牌体系，照抄结构、替换品牌色相）**
 >
-> | 类别 | 值 |
-> |---|---|
-> | 底色 | 主背景 `#FBFBF9`；卡片与侧栏 `#FFFFFF`（侧栏不置灰，靠 `#E5E5E3` 分隔线区分）；表格行线 `#EEEEEC` |
-> | 文字 | 主 `#1A1A1A` / 次级 `#3C3C3A` / 弱 `#5C5C5A`（表头）/ faint `#8A8A88`（meta、速度列） |
-> | 交互态 | 列表选中块 `#E9E9E7` r8；hover `#F2F2F0`；分段控件容器 `#F2F2F0`、选中项白底+`0 1px 2px rgba(0,0,0,.07)` 微阴影；下拉白底 1px 边框高 32 |
-> | 强调色 | teal `#1B6E8C`（唯一主强调）；"今日"徽标红 `#F45B5B`（全 UI 唯一暖色点缀）；语义：绿 `#15803D` / 琥珀 `#B45309` / 蓝 `#1D4ED8` / 负积分 `#B91C1C` |
-> | 热力图 | 六档 teal 阶梯 `#E8F4F6 → #C3E3EA → #8FCBD8 → #5AAFC4 → #2E8FAE → #1B6E8C`；空格 `#F7F7F5`；格子 13px r3 间距 3；顶部月份标签、左侧一/三/五/日、右下图例"少→多" |
-> | 字号 | 正文 12.5–13 / 页标题 17 semibold / KPI 数字 30 semibold / 表头 12.5 常规灰 |
-> | 结构 | 半径：控件 8 / 卡片 12 / 徽标胶囊 999；卡片无阴影（仅悬浮窗/托盘浮层带投影）；KPI 卡两行式（13px 标签 + 30px 数字，无图标无子行）；表格左对齐、行高≈50、无斑马纹、成本列 600 字重、速度列灰字带 ⓘ |
-> | 置信度徽章 | exact 绿 / vendor 蓝 / estimated 琥珀；白底 6% 同色tint、同色 32% 描边、r999、11px |
+> cc-switch 体系分三层：① shadcn HSL 双主题基础令牌（zinc 中性，`--radius 0.5rem`）；② 品牌色**只占一组** `--action-*` + `--ring`（原色 `#F97316` 橙，深色下自动压低至 `#d8783a`）；③ 语义功能色为**五件套模板**（fill/text/soft/solid/on）。TokenLedger 照抄三层结构，品牌色相换成**靛蓝 indigo**：
+>
+> | 角色 | cc-switch 原值 | TokenLedger 值 |
+> |---|---|---|
+> | bg-app（主区） | `#FFFFFF` | `#FFFFFF` |
+> | bg-sidebar | `#F5F5F7` | `#F5F5F7` |
+> | bg-subtle（hover/分段轨道） | `#EFEFF2` | `#EFEFF2` |
+> | bg-selected（导航选中） | `#E4E4EA` | `#E4E4EA` |
+> | border / border-strong | `#E4E4E7` / `#CFCFD6` | `#E4E4E7` / `#CFCFD6` |
+> | text-1 / text-2 / text-3 | `#18181B` / `#52525B` / `#65656E` | 同左 |
+> | control-off / 占位符 | `#888890` / — | `#888890` / `#A1A1AA` |
+> | **action-bg（品牌实心）** | `#F97316` | **`#4F46E5`** |
+> | action-hover / action-text | `#EA620A` / `#C2410C` | `#4338CA` / `#4338CA` |
+> | action-soft（品牌浅底） | `#FFF1E6` | `#EEF2FF` |
+> | ring 浅色 / 深色 | `#F97316` / `#D8783A` | `#4F46E5` / `#818CF8` |
+> | 热力图六档阶梯（品牌色系） | teal `#E8F4F6→#1B6E8C` | indigo `#EEF2FF → #DBE3FD → #B9C7FA → #90A8F4 → #687FE7 → #4F46E5` |
+> | "今日"徽标 | 红 `#F45B5B`（截图实测） | `#4F46E5`（即 action-bg） |
+> | 语义（置信度/负值） | destructive 照 shadcn | exact `#15803D` / vendor `#1D4ED8` / estimated `#B45309` / 负积分 `#B91C1C` |
+>
+> 结构规则照抄：品牌色只用于 logo/实心操作/选中强调/数据主色，中性 zinc 承载其余一切；深色主题用其同款 HSL（bg `240 3.4% 11.4%`、card `240 5.2% 19%`、border `240 5.3% 25.7%`）。
 
 ### 3.1 用量统计（首页，cc-switch 用量页同构）
 
