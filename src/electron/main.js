@@ -4963,7 +4963,8 @@ function sendPush(payload, options = {}) {
         const s = latestStats;
         const prov = (s?.limits?.providers || []).map((p) => `${p.provider}:${p.status}`).join(' ');
         const cred = (s?.devices || []).map((d) => `${d.deviceId}:credits=${d.credits ? d.credits.available : 'absent'}`).join(' ');
-        console.log(`[diag] sendPush reason=${payload?.data?.reason} limits=[${prov}] ${cred}`);
+        const at = s?.periods?.allTime || s?.allTime || {};
+        console.log(`[diag] sendPush reason=${payload?.data?.reason} limits=[${prov}] ${cred} allTime=${Math.round((at.totalTokens || 0) / 1e8 * 100) / 100}亿 5.6sol=${Math.round((at.models?.['gpt-5.6-sol'] || 0) / 1e8 * 100) / 100}亿 glm53f=${Math.round((at.models?.['glm-5.3-flash'] || 0) / 1e8 * 100) / 100}亿 opus48=${Math.round((at.models?.['claude-opus-4-8'] || 0) / 1e8 * 100) / 100}亿 uncl=${Math.round((at.unclassifiedTokens || 0) / 1e8 * 100) / 100}亿`);
       } catch (_) { /* diagnostics must never break the push */ }
     }
     // Client local batches overlay usage on the cached Hub snapshot; they do
