@@ -27,9 +27,10 @@ const USAGE_TRANSFORM_SETTING_KEYS = Object.freeze([
 // raw collector summary.
 //
 // A base is either flat ({tool, tokens}) or per-model ({tool, models:
-// [{model, tokens}]}) so declared history can carry real model attribution
-// instead of degrading into Unclassified. Per-model sums feed totalTokens,
-// clientTokens, models and clientModels alike.
+// [{model, tokens, output?, cacheRead?, cacheWrite?, cost?}]}) so declared
+// history can carry real model and component attribution (outputs, cache
+// reads/writes, cost) instead of degrading into Unclassified. Per-model
+// component sums fold into the period's component fields and maps.
 function applyManualUsageBases(summary, bases) {
   if (!Array.isArray(bases) || bases.length === 0) return summary;
   // Collector summaries carry periods at the top level (allTime/today/month);
@@ -44,8 +45,16 @@ function applyManualUsageBases(summary, bases) {
     if (Array.isArray(base?.models)) {
       for (const entry of base.models) {
         const model = String(entry?.model || '').trim();
-        const tokens = Math.max(0, Math.trunc(Number(entry?.tokens) || 0));
-        if (model && tokens > 0) modelEntries.push({ model, tokens });
+        const parts = {
+          tokens: Math.max(0, Math.trunc(Number(entry?.tokens) || 0)),
+          output: Math.max(0, Math.trunc(Number(entry?.output) || 0)),
+          cacheRead: Math.max(0, Math.trunc(Number(entry?.cacheRead) || 0)),
+          cacheWrite: Math.max(0, Math.trunc(Number(entry?.cacheWrite) || 0)),
+          cost: Number(entry?.cost) || 0
+        };
+        if (model && Object.values(parts).some((v) => v > 0)) {
+          modelEntries.push({ model, ...parts });
+        }
       }
       if (modelEntries.length > 0) flatTokens = 0;
     }
@@ -63,9 +72,56 @@ function applyManualUsageBases(summary, bases) {
     const models = allTime.models || (allTime.models = {});
     const clientModels = allTime.clientModels || (allTime.clientModels = {});
     const perClient = clientModels[tool] || (clientModels[tool] = {});
-    for (const { model, tokens } of modelEntries) {
-      models[model] = (models[model] || 0) + tokens;
-      perClient[model] = (perClient[model] || 0) + tokens;
+    // Component sums fold into the period fields and the per-client maps.
+    let sumOutput = 0;
+    let sumCacheRead = 0;
+    let sumCacheWrite = 0;
+    let sumCost = 0;
+    for (const { model, tokens, output, cacheRead, cacheWrite, cost } of modelEntries) {
+      if (tokens > 0) {
+        models[model] = (models[model] || 0) + tokens;
+        perClient[model] = (perClient[model] || 0) + tokens;
+      }
+      if (output > 0) {
+        const map = allTime.modelOutputs || (allTime.modelOutputs = {});
+        map[model] = (map[model] || 0) + output;
+        sumOutput += output;
+      }
+      if (cacheRead > 0) {
+        const map = allTime.modelCacheReads || (allTime.modelCacheReads = {});
+        map[model] = (map[model] || 0) + cacheRead;
+        sumCacheRead += cacheRead;
+      }
+      if (cacheWrite > 0) {
+        const map = allTime.modelCacheWrites || (allTime.modelCacheWrites = {});
+        map[model] = (map[model] || 0) + cacheWrite;
+        sumCacheWrite += cacheWrite;
+      }
+      if (cost > 0) {
+        const map = allTime.modelCosts || (allTime.modelCosts = {});
+        map[model] = (map[model] || 0) + cost;
+        sumCost += cost;
+      }
+    }
+    if (sumOutput > 0) {
+      allTime.outputTokens = (allTime.outputTokens || 0) + sumOutput;
+      const cm = allTime.clientOutputs || (allTime.clientOutputs = {});
+      cm[tool] = (cm[tool] || 0) + sumOutput;
+    }
+    if (sumCacheRead > 0) {
+      allTime.cacheReadTokens = (allTime.cacheReadTokens || 0) + sumCacheRead;
+      const cm = allTime.clientCacheReads || (allTime.clientCacheReads = {});
+      cm[tool] = (cm[tool] || 0) + sumCacheRead;
+    }
+    if (sumCacheWrite > 0) {
+      allTime.cacheWriteTokens = (allTime.cacheWriteTokens || 0) + sumCacheWrite;
+      const cm = allTime.clientCacheWrites || (allTime.clientCacheWrites = {});
+      cm[tool] = (cm[tool] || 0) + sumCacheWrite;
+    }
+    if (sumCost > 0) {
+      allTime.costUsd = (allTime.costUsd || 0) + sumCost;
+      const cm = allTime.clientCosts || (allTime.clientCosts = {});
+      cm[tool] = (cm[tool] || 0) + sumCost;
     }
   }
   return summary;

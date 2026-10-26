@@ -150,6 +150,40 @@ test('per-model bases attribute tokens to models and clientModels', () => {
   assert.equal(out.allTime.clientModels.claude['claude-sonnet-5'], 1000);
 });
 
+test('per-model component components fold into period component fields', () => {
+  const transform = createUsageTransform({
+    getSettings: () => ({
+      sessionUsageArchiveEnabled: false,
+      projectsEnabled: false,
+      manualUsageBases: [{
+        tool: 'claude',
+        models: [{
+          model: 'claude-opus-4-8',
+          tokens: 11202400000,
+          output: 84600000,
+          cacheRead: 10700000000,
+          cacheWrite: 416300000
+        }]
+      }]
+    })
+  });
+  const out = transform.transform({
+    deviceId: 'd',
+    allTime: { totalTokens: 2052159, outputTokens: 500000, cacheReadTokens: 1000, cacheWriteTokens: 0, clients: { claude: 2052159 }, models: {}, clientModels: {} }
+  }, 'test', {});
+  // totalTokens only takes the model tokens (the user's declared total stands).
+  assert.equal(out.allTime.totalTokens, 2052159 + 11202400000);
+  assert.equal(out.allTime.outputTokens, 500000 + 84600000);
+  assert.equal(out.allTime.cacheReadTokens, 1000 + 10700000000);
+  assert.equal(out.allTime.cacheWriteTokens, 416300000);
+  assert.equal(out.allTime.modelOutputs['claude-opus-4-8'], 84600000);
+  assert.equal(out.allTime.modelCacheReads['claude-opus-4-8'], 10700000000);
+  assert.equal(out.allTime.modelCacheWrites['claude-opus-4-8'], 416300000);
+  assert.equal(out.allTime.clientOutputs.claude, 84600000);
+  assert.equal(out.allTime.clientCacheReads.claude, 10700000000);
+  assert.equal(out.allTime.clientCacheWrites.claude, 416300000);
+});
+
 test('a per-model base with only junk model rows contributes nothing', () => {
   const transform = createUsageTransform({
     getSettings: () => ({
