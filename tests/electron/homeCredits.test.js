@@ -121,6 +121,45 @@ test('manual usage bases tolerate junk entries and missing periods', () => {
   assert.equal(out2.allTime.clientTokens.zcode, 7);
 });
 
+test('per-model bases attribute tokens to models and clientModels', () => {
+  const transform = createUsageTransform({
+    getSettings: () => ({
+      sessionUsageArchiveEnabled: false,
+      projectsEnabled: false,
+      manualUsageBases: [{
+        tool: 'claude',
+        models: [
+          { model: 'claude-opus-4-8', tokens: 11117300000 },
+          { model: 'claude-fable-5', tokens: 4134200000 }
+        ]
+      }]
+    })
+  });
+  const out = transform.transform({
+    deviceId: 'd',
+    allTime: { totalTokens: 2052159, clientTokens: { claude: 2052159 }, models: { 'claude-sonnet-5': 1000 }, clientModels: { claude: { 'claude-sonnet-5': 1000 } } }
+  }, 'test', {});
+  assert.equal(out.allTime.totalTokens, 2052159 + 11117300000 + 4134200000);
+  assert.equal(out.allTime.clientTokens.claude, 11117300000 + 4134200000 + 2052159);
+  assert.equal(out.allTime.models['claude-opus-4-8'], 11117300000);
+  assert.equal(out.allTime.models['claude-fable-5'], 4134200000);
+  assert.equal(out.allTime.models['claude-sonnet-5'], 1000);
+  assert.equal(out.allTime.clientModels.claude['claude-opus-4-8'], 11117300000);
+  assert.equal(out.allTime.clientModels.claude['claude-sonnet-5'], 1000);
+});
+
+test('a per-model base with only junk model rows contributes nothing', () => {
+  const transform = createUsageTransform({
+    getSettings: () => ({
+      sessionUsageArchiveEnabled: false,
+      projectsEnabled: false,
+      manualUsageBases: [{ tool: 'claude', models: [{ model: '', tokens: 5 }, { model: 'm', tokens: -1 }] }]
+    })
+  });
+  const out = transform.transform({ deviceId: 'd', allTime: { totalTokens: 10 } }, 'test', {});
+  assert.equal(out.allTime.totalTokens, 10);
+});
+
 test('aggregateDevices passes the ledger through per device only', () => {
   const credits = { available: true, tool: 'workbuddy', updatedAt: 'x', totals: { credits: 9, requests: 2 } };
   const stats = aggregateDevices([
