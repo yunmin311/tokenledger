@@ -96,13 +96,15 @@ test('manual usage bases fold a fixed historical offset into allTime', () => {
       manualUsageBases: [{ tool: 'zcode', tokens: 600000000 }]
     })
   });
-  const raw = { deviceId: 'd', allTime: { totalTokens: 100, clientTokens: { codex: 100 } } };
+  const raw = { deviceId: 'd', allTime: { totalTokens: 100, clients: { codex: 100 } } };
   const out = transform.transform(raw, 'test', {});
   assert.equal(out.allTime.totalTokens, 100 + 600000000);
-  assert.equal(out.allTime.clientTokens.zcode, 600000000);
-  assert.equal(out.allTime.clientTokens.codex, 100);
+  // The per-client map is `clients` — the field the Tools view reads.
+  assert.equal(out.allTime.clients.zcode, 600000000);
+  assert.equal(out.allTime.clients.codex, 100);
+  assert.equal(out.allTime.clientTokens, undefined);
   // Idempotent per call: the base is a constant on the raw summary, never compounding.
-  const again = transform.transform({ deviceId: 'd', allTime: { totalTokens: 100, clientTokens: {} } }, 'test', {});
+  const again = transform.transform({ deviceId: 'd', allTime: { totalTokens: 100, clients: {} } }, 'test', {});
   assert.equal(again.allTime.totalTokens, 100 + 600000000);
 });
 
@@ -118,7 +120,7 @@ test('manual usage bases tolerate junk entries and missing periods', () => {
   assert.equal(out.allTime, undefined);
   const out2 = transform.transform({ deviceId: 'd', allTime: { totalTokens: 0 } }, 'test', {});
   assert.equal(out2.allTime.totalTokens, 7);
-  assert.equal(out2.allTime.clientTokens.zcode, 7);
+  assert.equal(out2.allTime.clients.zcode, 7);
 });
 
 test('per-model bases attribute tokens to models and clientModels', () => {
@@ -137,10 +139,10 @@ test('per-model bases attribute tokens to models and clientModels', () => {
   });
   const out = transform.transform({
     deviceId: 'd',
-    allTime: { totalTokens: 2052159, clientTokens: { claude: 2052159 }, models: { 'claude-sonnet-5': 1000 }, clientModels: { claude: { 'claude-sonnet-5': 1000 } } }
+    allTime: { totalTokens: 2052159, clients: { claude: 2052159 }, models: { 'claude-sonnet-5': 1000 }, clientModels: { claude: { 'claude-sonnet-5': 1000 } } }
   }, 'test', {});
   assert.equal(out.allTime.totalTokens, 2052159 + 11117300000 + 4134200000);
-  assert.equal(out.allTime.clientTokens.claude, 11117300000 + 4134200000 + 2052159);
+  assert.equal(out.allTime.clients.claude, 11117300000 + 4134200000 + 2052159);
   assert.equal(out.allTime.models['claude-opus-4-8'], 11117300000);
   assert.equal(out.allTime.models['claude-fable-5'], 4134200000);
   assert.equal(out.allTime.models['claude-sonnet-5'], 1000);

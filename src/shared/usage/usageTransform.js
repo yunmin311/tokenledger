@@ -54,7 +54,10 @@ function applyManualUsageBases(summary, bases) {
       : flatTokens;
     if (total === 0) continue;
     allTime.totalTokens = (allTime.totalTokens || 0) + total;
-    const clients = allTime.clientTokens || (allTime.clientTokens = {});
+    // The per-client token map is `clients` (normalizePeriod's shape) — not
+    // clientTokens. Writing the wrong key here is what previously made the
+    // bases show up as Unclassified rows in the Tools view.
+    const clients = allTime.clients || (allTime.clients = {});
     clients[tool] = (clients[tool] || 0) + total;
     if (modelEntries.length === 0) continue;
     const models = allTime.models || (allTime.models = {});
