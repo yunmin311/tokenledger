@@ -32,7 +32,7 @@ git push
 | Trae CN 额度 | 待配 token | traE.cn 登录 → F12 → Cookies → 复制 `cloud-ide-jwt` 粘贴到设置 Trae 处 |
 | 托盘内容 | 可切 tokens/cost/bars | 默认显示当期用量最高 agent 的 logo |
 | DeepSeek 额度 | 已通过 `.env` 配好 | 余额卡片已就绪 |
-| ZCode 历史基数 | `manualUsageBases`（3 条已配） | codex +453,699,906（对齐官方 32.8 亿）；zcode +123,033,649（两卷 6 亿 − 本地 4.77 亿）；claude +18,900,000,000（公司机 Claude Code 七八月，用户申报 /stats）。均为恒定 allTime 偏移，改数字后重启生效；官方计数器继续走，基数是快照口径 |
+| ZCode 历史基数 | `manualUsageBases`（3 条已配） | codex +453,699,906（对齐官方 32.8 亿，扁平→Unclassified）；zcode +123,033,649 **按模型 glm-5.3-flash**（两卷 6 亿 − 本地 4.77 亿）；claude **按模型 4 条合计 18,890,164,300**（公司机 /stats 逐模型：opus-4-8 11.20B、fable-5 4.14B、opus-5 3.52B、sonnet-5 0.03B，In+Out+cacheR+cacheW 口径）。均为恒定 allTime 偏移，改数字后重启生效；官方计数器继续走，基数是快照口径 |
 
 ## 三、隐私与数据安全边界
 
