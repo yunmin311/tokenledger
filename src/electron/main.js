@@ -2834,7 +2834,11 @@ function migrateCodexAdditionalLimits(visibleStats) {
 }
 
 function loginItemEnabledHere() {
-  if (!app.isPackaged) return false;
+  // TokenLedger: the dev instance is the daily driver on this machine, so
+  // win32 dev runs manage their own Run entry (loginItemOptions() supplies
+  // the app-directory argument); other unpacked platforms keep the
+  // packaged-only gate.
+  if (!app.isPackaged) return process.platform === 'win32';
   // Electron login items only cover macOS/Windows; on Linux we manage an XDG
   // autostart entry ourselves, which needs the AppImage runtime ($APPIMAGE).
   if (process.platform === 'linux') return linuxAutostart.autostartSupported();
@@ -2844,14 +2848,24 @@ function loginItemEnabledHere() {
 function currentLoginItemState() {
   if (!loginItemEnabledHere()) return false;
   if (process.platform === 'linux') return linuxAutostart.isAutostartEnabled();
-  try { return Boolean(app.getLoginItemSettings().openAtLogin); }
+  try { return Boolean(app.getLoginItemSettings({ ...loginItemOptions() }).openAtLogin); }
   catch (_) { return false; }
+}
+
+// A dev instance (npm start) launches electron.exe with the app directory as
+// its argument. Without passing the same args here, the registered Run entry
+// would open the bare Electron shell and getLoginItemSettings() would not
+// recognize the entry. Packaged builds keep the argument-free upstream path.
+function loginItemOptions() {
+  return process.platform === 'win32' && !app.isPackaged
+    ? { args: [path.resolve(__dirname, '..', '..')] }
+    : {};
 }
 
 function applyLoginItem(startAtLogin) {
   if (!loginItemEnabledHere()) return false;
   if (process.platform === 'linux') return linuxAutostart.setAutostartEnabled(Boolean(startAtLogin));
-  app.setLoginItemSettings({ openAtLogin: Boolean(startAtLogin) });
+  app.setLoginItemSettings({ openAtLogin: Boolean(startAtLogin), ...loginItemOptions() });
   return currentLoginItemState();
 }
 
