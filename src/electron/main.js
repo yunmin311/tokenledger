@@ -336,7 +336,7 @@ const {
 const { createUsageTransform, usageTransformSettings } = require('../shared/usage/usageTransform');
 const { createCreditsAttacher } = require('../shared/credits/attach');
 const { createUsageHost, terminateUsageHostSubprocesses, whenUsageHostsIdle } = require('../shared/usage/usageHost');
-const { clearDailyHistoryArchive } = require('../shared/dailyHistoryArchive');
+const { clearDailyHistoryArchive, dailyHistoryArchivePath, readDailyHistoryArchive } = require('../shared/dailyHistoryArchive');
 const { aggregateDevices, aggregateHistory } = require('../shared/usage');
 const {
   HUB_RESPONSE_HEADER,
@@ -3219,10 +3219,49 @@ function applyNativeMaterial(source = settings) {
   limitsHistoryController?.syncMaterial();
 }
 
+// A device's history only exists once this run has performed a graph scan, so on
+// every cold start the derived windows (7D/30D/WEEK) read empty for the minutes
+// until that scan lands — while DAY, which comes from the incremental scan, is
+// already correct. That asymmetry is what "only today shows" looks like. The same
+// observations are already on disk, so serve them as a display fallback until the
+// live graph replaces them.
+const archivedPreviewCache = { mtimeMs: -1, daily: null };
+
+function archivedDailyPreview() {
+  try {
+    const filePath = dailyHistoryArchivePath();
+    const { mtimeMs } = fs.statSync(filePath);
+    if (archivedPreviewCache.mtimeMs === mtimeMs) return archivedPreviewCache.daily;
+    const archive = readDailyHistoryArchive({ path: filePath });
+    const daily = Object.entries(archive.days || {})
+      .sort(([left], [right]) => (left < right ? -1 : left > right ? 1 : 0))
+      .slice(-30)
+      .map(([date, day]) => {
+        let tokens = 0;
+        let cost = 0;
+        for (const observation of Object.values(day?.observations || {})) {
+          tokens += Number(observation?.tokens) || 0;
+          cost += Number(observation?.cost) || 0;
+        }
+        return { date, tokens, cost, activeTimeMs: Number(day?.activeTimeMs) || 0 };
+      })
+      .filter((row) => row.tokens > 0);
+    archivedPreviewCache.mtimeMs = mtimeMs;
+    archivedPreviewCache.daily = daily;
+    return daily;
+  } catch {
+    return null;
+  }
+}
+
 function withHistoryPreview(stats, devices) {
   const historyDevices = settings?.historyEnabled === false ? [] : devices;
   const history = aggregateHistory(historyDevices);
   stats.historyPreview = historyPreview(history);
+  if (stats.historyPreview.daily.length === 0 && historyDevices.length > 0) {
+    const archived = archivedDailyPreview();
+    if (archived && archived.length > 0) stats.historyPreview.daily = archived;
+  }
   stats.historyRevision = historyRevision(history);
   stats.deviceHistoryRevision = deviceHistoryRevision(historyDevices);
   return stats;

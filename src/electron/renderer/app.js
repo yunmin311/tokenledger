@@ -3306,10 +3306,30 @@ function fixedPeriodDevices() {
 }
 
 function fixedPeriodSources() {
-  return fixedPeriodRangesApi.joinDeviceHistorySources(
+  const joined = fixedPeriodRangesApi.joinDeviceHistorySources(
     state.fixedPeriodHistory?.deviceHistories || [],
     state.stats?.devices || []
   );
+  if (joined.some((source) => source.historyAvailable === true)) return joined;
+  // Cold start: a device's own graph only exists after this run has scanned, so
+  // 7D/30D/WEEK read zero for the minutes until then — while DAY, fed by the
+  // incremental scan, is already right. The same observations are on disk and
+  // arrive as historyPreview; use them until the live graph replaces them.
+  const preview = state.stats?.historyPreview;
+  if (!preview?.daily?.length) return joined;
+  const history = {
+    daily: preview.daily,
+    monthly: preview.monthly || [],
+    summary: preview.summary || {}
+  };
+  if (joined.length === 0) {
+    return [{ deviceId: 'history-preview', history, historyAvailable: true }];
+  }
+  return joined.map((source) => ({
+    ...source,
+    history: source.history || history,
+    historyAvailable: source.historyAvailable === true || !source.history
+  }));
 }
 
 function buildFixedPeriodSourcesSnapshot() {
@@ -9897,6 +9917,15 @@ function syncPeriodTabs() {
     els.monthPeriodTab.textContent = fixedPeriodRangesApi.displayLabel(mode);
     els.monthPeriodTab.dataset.period = mode;
   }
+  // The selection has to be one the strip can represent. Settings arrive after
+  // the first paint, so a persisted `last30` can face a strip still labelled
+  // MONTH/'month' — nothing then matches, and the view renders empty while DAY
+  // keeps working. Adopt whatever the middle tab actually offers.
+  if (!tabs.some((tab) => tab.dataset.period === state.period)) {
+    const slot = fixedPeriodRangesApi.slotForSelection(state.period);
+    const match = tabs.find((tab) => tab.dataset.periodSlot === slot);
+    if (match?.dataset.period) state.period = match.dataset.period;
+  }
   syncPeriodMenu();
 }
 
@@ -15028,6 +15057,12 @@ window.tokenMonitor.onSettingsPush?.((next) => {
     if (JSON.stringify(next[key]) !== JSON.stringify(state.settings?.[key])) delete appearancePreview[key];
   }
   setRendererSettings(next);
+  // Settings define the period strip (its middle slot is user-chosen) and arrive
+  // after the first paint. Re-syncing here keeps a persisted `last30` matched to
+  // a tab that still said 'month' — otherwise nothing matches and the view
+  // renders empty while DAY keeps working. The guard keeps sliced sandboxes that
+  // evaluate this callback without the strip runnable.
+  if (typeof syncPeriodTabs === 'function') syncPeriodTabs();
   syncPluginTrayDemand();
   applyEffectiveCurrencyRates();
   observeDisplayLiveTokenRates(state.stats);
